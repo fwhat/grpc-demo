@@ -1,6 +1,6 @@
 ## Golang-gRPC 服务搭建
 
-本文记录Golang-gRPC、grpc-web + nginx 搭建过程，以及中途遇到的一些问题 项目代码
+本文记录Golang-gRPC、grpc-web + nginx 搭建过程，以及中途遇到的一些问题 [项目代码](https://github.com/Dowte/grpc-demo)
 
 ### 一、理解什么是gRPC
 
