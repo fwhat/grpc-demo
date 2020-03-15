@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package api;
+
+// 这里可以写服务注释
+service HelloWorldService {
+    // 这里可以写方法注释
+    rpc SayHello (HelloRequest) returns (HelloResponse) {}
+}
+
+// 这里可以写请求结构注释
+message HelloRequest {
+    // 这里可以写参数注释
+    string name = 1;
+}
+
+// 这里可以写响应结构注释
+message HelloResponse {
+    // 这里可以写参数注释
+    string message = 1;
+}

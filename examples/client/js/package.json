@@ -1,0 +1,12 @@
+{
+  "name": "js",
+  "version": "1.0.0",
+  "dependencies": {},
+  "main": "main.js",
+  "devDependencies": {
+    "google-protobuf": "^3.11.4",
+    "grpc-web": "^1.0.7",
+    "webpack": "^4.16.5",
+    "webpack-cli": "^3.1.0"
+  }
+}
