@@ -1,0 +1,26 @@
+version: '3'
+services:
+  server:
+    ports:
+      - "9999:9999"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: server
+    networks:
+      - grpc_demo
+  nginx:
+    image: nginx
+    ports:
+      - "8081:8080"
+      - "8199:8199"
+    volumes:
+    - ./examples/nginx/proxy.conf:/etc/nginx/conf.d/proxy.conf
+    - ./examples/nginx/web.conf:/etc/nginx/conf.d/web.conf
+    - ./examples/nginx/keys:/ssl
+    - ./examples/client/js/index.html:/var/www/html/index.html
+    - ./examples/client/js/dist:/var/www/html/dist
+    networks:
+      - grpc_demo
+networks:
+  grpc_demo:

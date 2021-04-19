@@ -7,6 +7,10 @@
 // GENERATED CODE -- DO NOT EDIT!
 
 
+/* eslint-disable */
+// @ts-nocheck
+
+
 
 const grpc = {};
 grpc.web = require('grpc-web');
@@ -134,7 +138,7 @@ proto.api.HelloWorldServiceClient.prototype.sayHello =
  * @param {?Object<string, string>} metadata User defined
  *     call metadata
  * @return {!Promise<!proto.api.HelloResponse>}
- *     A native promise that resolves to the response
+ *     Promise that resolves to the response
  */
 proto.api.HelloWorldServicePromiseClient.prototype.sayHello =
     function(request, metadata) {

@@ -1,3 +1,17 @@
+## 版本
+
+```
+go: 
+golang 1.16.3
+protoc --version 3.15.8
+google.golang.org/grpc 1.37.0
+protoc-gen-go v1.26.0
+
+js:
+grpc-web 1.2.1
+google-protobuf 3.15.8
+```
+
 ## Golang-gRPC 服务搭建
 
 本文记录Golang-gRPC、grpc-web + nginx 搭建过程，以及中途遇到的一些问题 [项目代码](https://github.com/Dowte/grpc-demo)
@@ -73,21 +87,22 @@ message HelloResponse {
 
 ![7FDCC505-94F5-47B2-8AAC-DC0FCD9A864D.png](https://segmentfault.com/img/bVbEyhB)
 
-+ 下载生成go语言接口代码的插件 [protoc-gen-go](github.com/golang/protobuf/protoc-gen-go) 
++ 下载生成go语言接口代码的插件 [protoc-gen-go](https://grpc.io/docs/languages/go/quickstart/) 
 ```
-go get -u github.com/golang/protobuf/protoc-gen-go
+go get google.golang.org/protobuf/cmd/protoc-gen-go
+go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
 ```
 
 + 编写api/proto/v1/init.go, 作为生成脚本(也可以直接在命令行执行)
 ```
 package api
 
-//go:generate protoc -I. --go_out=plugins=grpc:. ./hello.proto
+// go:generate protoc -I. --go_out=../ --go-grpc_out=../ ./hello.proto
 
 func init() {}
 
 ```
-+ 执行后将得到文件 hello.pb.go 里面是hello服务相关描述和接口申明
++ 执行后将得到文件 hello/hello.pb.go hello/hello_grpc.pb.go 里面是hello服务相关描述和接口申明
 
 ##### 3. 编写gRPC server端代码
 
@@ -96,7 +111,9 @@ func init() {}
 ```
 package hello
 
-type Service struct {}
+type Service struct {
+    api.UnimplementedHelloWorldServiceServer // 当前版本需要继承对应的Unimplemented* 结构体
+}
 ```
 + api/service/hello/say_hello.go
 
@@ -105,7 +122,7 @@ package hello
 
 import (
 	"context"
-	api "grpc-demo/api/proto/v1"
+	api "grpc-demo/api/proto/v1/hello"
 )
 
 func (hello Service) SayHello (_ context.Context, params *api.HelloRequest) (res *api.HelloResponse, err error)  {
@@ -124,7 +141,7 @@ package api
 
 import (
 	"google.golang.org/grpc"
-	api "grpc-demo/api/proto/v1"
+	api "grpc-demo/api/proto/v1/hello"
 	"grpc-demo/api/service/hello"
 	"log"
 	"net"
@@ -183,7 +200,7 @@ package main
 import (
 	"context"
 	"google.golang.org/grpc"
-	api "grpc-demo/api/proto/v1"
+	api "grpc-demo/api/proto/v1/hello"
 	"log"
 	"os"
 )
@@ -240,7 +257,7 @@ grpc-web 是针对web端的grpcClient 的项目，解决目前浏览器不能直
 
 ```
 # 将下载后的内容移动到bin路径中方便使用
-mv ~/Downloads/protoc-gen-grpc-web-1.0.7-darwin-x86_64 /usr/local/bin/protoc-gen-grpc-web
+mv ~/Downloads/protoc-gen-grpc-web-<version>-darwin-x86_64 /usr/local/bin/protoc-gen-grpc-web
 # 增加可执行权限
 chmod +x /usr/local/bin/protoc-gen-grpc-web
 ```
@@ -270,10 +287,10 @@ protoc \
   "name": "js",
   "version": "1.0.0",
   "dependencies": {},
-  "main": "src/main.js",
+  "main": "main.js",
   "devDependencies": {
-    "google-protobuf": "^3.11.4",
-    "grpc-web": "^1.0.7",
+    "google-protobuf": "^3.15.8",
+    "grpc-web": "^1.2.1",
     "webpack": "^4.16.5",
     "webpack-cli": "^3.1.0"
   }
@@ -321,11 +338,27 @@ npx webpack src/main.js
 ##### 2. 配置代理服务
 
 1. 代理服务选型 envoy 或 nginx，envoy配置官方示例中有 [查看配置](https://github.com/grpc/grpc-web/blob/master/net/grpc/gateway/examples/echo/envoy.yaml), [其他示例官方也有提供](https://github.com/grpc/grpc-web/blob/master/net/grpc/gateway/examples), 本文使用nginx配置(本地搭建)。
+
+2. localhost 支持ssl
+
+```
+git clone https://github.com/FiloSottile/mkcert && cd mkcert
+go build -ldflags "-X main.Version=$(git describe --tags)"
+./mkcert -install
+./mkcert localhost 127.0.0.1
+mv localhost+1* /etc/ssl/
+```
+
 2. grpc.proxy.conf
 ```
 server {
-  listen 8199;
+  listen 8199 ssl http2;
   server_name _;
+
+  ssl_certificate /etc/ssl/localhost+1.pem;
+  ssl_certificate_key /etc/ssl/localhost+1-key.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
 
   access_log /tmp/grpc.log;
   error_log /tmp/grpc.log debug;
@@ -337,7 +370,7 @@ server {
     # 重点！！需要将Content-Type更改为 application/grpc
     # grpc-web过来的是application/grpc-web+proto || application/grpc-web+text (取决于生成js代码时grpc-web_out 的mode选项，本文用grpcweb 则为application/grpc-web+proto)
     grpc_set_header Content-Type application/grpc;
-    grpc_pass localhost:9999;
+    grpc_pass server:9999;
     # 因浏览器有跨域限制，这里直接在nginx支持跨域
     if ($request_method = 'OPTIONS') {
       add_header 'Access-Control-Allow-Origin' '*';
@@ -381,4 +414,4 @@ server {
 
 **方案:** grpc_set_header Content-Type application/grpc;
 
-##### 3. grpc-web 目前在服务端error的时候会有两次触发回调函数。[issue](https://github.com/grpc/grpc-web/pull/695) 目前已合并至master，~~发布日期未知~~
+##### 3. grpc-web 目前在服务端error的时候会有两次触发回调函数。[issue](https://github.com/grpc/grpc-web/pull/695) 目前已合并至master, 当前版本已修复

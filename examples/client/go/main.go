@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"google.golang.org/grpc"
-	api "grpc-demo/api/proto/v1"
+	api "grpc-demo/api/proto/v1/hello"
 	"log"
 	"os"
 )

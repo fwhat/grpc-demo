@@ -2,7 +2,7 @@ package api
 
 import (
 	"google.golang.org/grpc"
-	api "grpc-demo/api/proto/v1"
+	api "grpc-demo/api/proto/v1/hello"
 	"grpc-demo/api/service/hello"
 	"log"
 	"net"

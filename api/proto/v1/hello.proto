@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package api;
 
+option go_package = "./hello";
+
 // 这里可以写服务注释
 service HelloWorldService {
     // 这里可以写方法注释
